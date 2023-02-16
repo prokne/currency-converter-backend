@@ -13,13 +13,20 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
+const axios_1 = __importDefault(require("axios"));
+const dotenv_1 = __importDefault(require("dotenv"));
 const app = (0, express_1.default)();
-const axios = require("axios");
-require("dotenv").config();
-//Generates list of currencies from currency API
-const getListOfCurrencies = () => __awaiter(void 0, void 0, void 0, function* () {
+app.use((req, res, next) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    next();
+});
+dotenv_1.default.config();
+app.get("/", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    //Generates list of currencies from currency API
     try {
-        const data = yield axios.get("https://api.apilayer.com/fixer/symbols?apikey=" + process.env.APIKEY);
+        const data = yield axios_1.default.get("https://api.apilayer.com/fixer/symbols?apikey=" + process.env.APIKEY);
         let listofCurrencies = [];
         for (const currency in data.data.symbols) {
             listofCurrencies.push({
@@ -27,19 +34,14 @@ const getListOfCurrencies = () => __awaiter(void 0, void 0, void 0, function* ()
                 name: data.data.symbols[currency],
             });
         }
-        return listofCurrencies;
+        res.status(200).send({
+            message: "List of currencies fetched successfuly",
+            data: listofCurrencies,
+        });
     }
     catch (err) {
-        return {
-            message: err.message,
-            status: err.status,
-        };
+        res.send({ error: err.message });
     }
-});
-app.get("/", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const response = yield getListOfCurrencies();
-    console.log(response);
-    res.send(response);
 }));
 app.listen(process.env.PORT, () => {
     console.log("Server is running on port " + process.env.PORT);

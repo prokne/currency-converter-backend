@@ -1,17 +1,18 @@
-import express from "express";
+import express, { Request, Response } from "express";
+import axios from "axios";
+import dotenv from "dotenv";
+
 const app = express();
-const axios = require("axios");
-require("dotenv").config();
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  next();
+});
+dotenv.config();
 
-type Currencies = { [key: string]: string }[];
-
-type ApiError = {
-  message: string;
-  status: number;
-};
-
-//Generates list of currencies from currency API
-const getListOfCurrencies = async (): Promise<Currencies | ApiError> => {
+app.get("/", async (req: Request, res: Response) => {
+  //Generates list of currencies from currency API
   try {
     const data = await axios.get(
       "https://api.apilayer.com/fixer/symbols?apikey=" + process.env.APIKEY
@@ -24,19 +25,13 @@ const getListOfCurrencies = async (): Promise<Currencies | ApiError> => {
         name: data.data.symbols[currency],
       });
     }
-    return listofCurrencies;
+    res.status(200).send({
+      message: "List of currencies fetched successfuly",
+      data: listofCurrencies,
+    });
   } catch (err: any) {
-    return {
-      message: err.message,
-      status: err.status,
-    };
+    res.send({ error: err.message });
   }
-};
-
-app.get("/", async (req: express.Request, res: express.Response) => {
-  const response = await getListOfCurrencies();
-  console.log(response);
-  res.send(response);
 });
 
 app.listen(process.env.PORT, () => {
