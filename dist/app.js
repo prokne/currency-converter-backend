@@ -15,7 +15,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const axios_1 = __importDefault(require("axios"));
 const dotenv_1 = __importDefault(require("dotenv"));
+const body_parser_1 = __importDefault(require("body-parser"));
+//ADD VALIDATION
 const app = (0, express_1.default)();
+app.use(body_parser_1.default.json());
 app.use((req, res, next) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE");
@@ -23,10 +26,11 @@ app.use((req, res, next) => {
     next();
 });
 dotenv_1.default.config();
-app.get("/", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+app.get("/currencies", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //Generates list of currencies from currency API
     try {
         const data = yield axios_1.default.get("https://api.apilayer.com/fixer/symbols?apikey=" + process.env.APIKEY);
+        //Create array of currencies
         let listofCurrencies = [];
         for (const currency in data.data.symbols) {
             listofCurrencies.push({
@@ -43,6 +47,25 @@ app.get("/", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         res.send({ error: err.message });
     }
 }));
+app.post("/convert", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const amount = req.body.amount;
+    const fromCurrency = req.body.from;
+    const toCurrency = req.body.to;
+    try {
+        const data = yield axios_1.default.get(`https://api.apilayer.com/fixer/convert?to=${toCurrency}&from=${fromCurrency}&amount=${amount}&apikey=${process.env.APIKEY}`);
+        console.log(data.data);
+        const result = data.data.result.toFixed(2);
+        res.status(200).send({
+            amount: amount,
+            from: fromCurrency,
+            to: toCurrency,
+            result: result,
+        });
+    }
+    catch (err) {
+        console.log(err);
+    }
+}));
 app.listen(process.env.PORT, () => {
-    console.log("Server is running on port " + process.env.PORT);
+    console.log("Server is listening to port " + process.env.PORT);
 });
