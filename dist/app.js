@@ -44,26 +44,37 @@ app.get("/currencies", (req, res) => __awaiter(void 0, void 0, void 0, function*
         });
     }
     catch (err) {
-        res.send({ error: err.message });
+        console.log(err);
+        res.send({ error: err.message || "Something went wrong" });
     }
 }));
 app.post("/convert", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const amount = req.body.amount;
     const fromCurrency = req.body.from;
     const toCurrency = req.body.to;
+    //Server-side form validation
+    if (+amount <= 0 || fromCurrency === toCurrency) {
+        res.status(422).send({ error: "There was a validation error" });
+    }
     try {
         const data = yield axios_1.default.get(`https://api.apilayer.com/fixer/convert?to=${toCurrency}&from=${fromCurrency}&amount=${amount}&apikey=${process.env.APIKEY}`);
         console.log(data.data);
-        const result = data.data.result.toFixed(2);
+        const result = data.data.result;
         res.status(200).send({
-            amount: amount,
-            from: fromCurrency,
-            to: toCurrency,
-            result: result,
+            message: "Result fetched successfuly",
+            data: {
+                amount: amount,
+                from: fromCurrency,
+                to: toCurrency,
+                result: result,
+            },
         });
     }
-    catch (err) {
-        console.log(err);
+    catch (error) {
+        console.log(error);
+        res.status(400).send({
+            error: error.message || "Unable to access server with demandend request",
+        });
     }
 }));
 app.listen(process.env.PORT, () => {

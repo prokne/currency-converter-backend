@@ -1,5 +1,5 @@
 import express, { Request, Response } from "express";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import dotenv from "dotenv";
 import bodyParser from "body-parser";
 
@@ -38,7 +38,8 @@ app.get("/currencies", async (req: Request, res: Response) => {
       data: listofCurrencies,
     });
   } catch (err: any) {
-    res.send({ error: err.message });
+    console.log(err);
+    res.send({ error: err.message || "Something went wrong" });
   }
 });
 
@@ -47,21 +48,33 @@ app.post("/convert", async (req: Request, res: Response) => {
   const fromCurrency: string = req.body.from;
   const toCurrency: string = req.body.to;
 
+  //Server-side form validation
+  if (+amount <= 0 || fromCurrency === toCurrency) {
+    res.status(422).send({ error: "There was a validation error" });
+  }
+
   try {
     const data = await axios.get(
       `https://api.apilayer.com/fixer/convert?to=${toCurrency}&from=${fromCurrency}&amount=${amount}&apikey=${process.env.APIKEY}`
     );
     console.log(data.data);
 
-    const result: number = data.data.result.toFixed(2);
+    const result: number = data.data.result;
     res.status(200).send({
-      amount: amount,
-      from: fromCurrency,
-      to: toCurrency,
-      result: result,
+      message: "Result fetched successfuly",
+      data: {
+        amount: amount,
+        from: fromCurrency,
+        to: toCurrency,
+        result: result,
+      },
     });
-  } catch (err: any) {
-    console.log(err);
+  } catch (error: any) {
+    console.log(error);
+
+    res.status(400).send({
+      error: error.message || "Unable to access server with demandend request",
+    });
   }
 });
 
