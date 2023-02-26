@@ -1,7 +1,9 @@
 import express, { Request, Response } from "express";
-import axios, { AxiosError } from "axios";
+import axios from "axios";
 import dotenv from "dotenv";
 import bodyParser from "body-parser";
+//import convert from "./util/convert";
+import { resetStats, updateStats, readStats } from "./util/stats";
 
 //ADD VALIDATION
 
@@ -20,22 +22,40 @@ dotenv.config();
 app.get("/currencies", async (req: Request, res: Response) => {
   //Generates list of currencies from currency API
   try {
+    // const data = await axios.get(
+    //   "https://api.apilayer.com/fixer/symbols?apikey=" + process.env.APIKEY
+    // );
     const data = await axios.get(
-      "https://api.apilayer.com/fixer/symbols?apikey=" + process.env.APIKEY
+      "https://api.apilayer.com/currency_data/list?apikey=" + process.env.APIKEY
     );
 
     //Create array of currencies
     let listofCurrencies: { shortcut: string; name: string }[] = [];
-    for (const currency in data.data.symbols) {
+    for (const currency in data.data.currencies) {
       listofCurrencies.push({
         shortcut: currency,
-        name: data.data.symbols[currency],
+        name: data.data.currencies[currency],
       });
     }
 
+    const {
+      mostPopularDestinationCurrency,
+      totalAmount,
+      totalNumberOfRequests,
+    } = await readStats();
+
+    const statsData = {
+      mostPopularDestinationCurrency,
+      totalAmount,
+      totalNumberOfRequests,
+    };
+
     res.status(200).send({
-      message: "List of currencies fetched successfuly",
-      data: listofCurrencies,
+      message: "List of currencies and stats fetched successfuly",
+      data: {
+        currencies: listofCurrencies,
+        stats: statsData,
+      },
     });
   } catch (err: any) {
     console.log(err);
@@ -54,19 +74,26 @@ app.post("/convert", async (req: Request, res: Response) => {
   }
 
   try {
-    const data = await axios.get(
-      `https://api.apilayer.com/fixer/convert?to=${toCurrency}&from=${fromCurrency}&amount=${amount}&apikey=${process.env.APIKEY}`
-    );
-    console.log(data.data);
+    //const result = await convert(fromCurrency, toCurrency, amount);
+    const result = 21;
+    await updateStats(fromCurrency, toCurrency, amount);
+    const stats = await readStats();
+    //console.log(stats);
 
-    const result: number = data.data.result;
     res.status(200).send({
       message: "Result fetched successfuly",
       data: {
-        amount: amount,
-        from: fromCurrency,
-        to: toCurrency,
-        result: result,
+        result: {
+          amount: amount,
+          from: fromCurrency,
+          to: toCurrency,
+          result: result,
+        },
+        stats: {
+          mostPopularDestinationCurrency: stats.mostPopularDestinationCurrency,
+          totalAmount: stats.totalAmount,
+          totalNumberOfRequests: stats.totalNumberOfRequests,
+        },
       },
     });
   } catch (error: any) {

@@ -16,6 +16,8 @@ const express_1 = __importDefault(require("express"));
 const axios_1 = __importDefault(require("axios"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const body_parser_1 = __importDefault(require("body-parser"));
+//import convert from "./util/convert";
+const stats_1 = require("./util/stats");
 //ADD VALIDATION
 const app = (0, express_1.default)();
 app.use(body_parser_1.default.json());
@@ -29,18 +31,30 @@ dotenv_1.default.config();
 app.get("/currencies", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //Generates list of currencies from currency API
     try {
-        const data = yield axios_1.default.get("https://api.apilayer.com/fixer/symbols?apikey=" + process.env.APIKEY);
+        // const data = await axios.get(
+        //   "https://api.apilayer.com/fixer/symbols?apikey=" + process.env.APIKEY
+        // );
+        const data = yield axios_1.default.get("https://api.apilayer.com/currency_data/list?apikey=" + process.env.APIKEY);
         //Create array of currencies
         let listofCurrencies = [];
-        for (const currency in data.data.symbols) {
+        for (const currency in data.data.currencies) {
             listofCurrencies.push({
                 shortcut: currency,
-                name: data.data.symbols[currency],
+                name: data.data.currencies[currency],
             });
         }
+        const { mostPopularDestinationCurrency, totalAmount, totalNumberOfRequests, } = yield (0, stats_1.readStats)();
+        const statsData = {
+            mostPopularDestinationCurrency,
+            totalAmount,
+            totalNumberOfRequests,
+        };
         res.status(200).send({
-            message: "List of currencies fetched successfuly",
-            data: listofCurrencies,
+            message: "List of currencies and stats fetched successfuly",
+            data: {
+                currencies: listofCurrencies,
+                stats: statsData,
+            },
         });
     }
     catch (err) {
@@ -57,16 +71,25 @@ app.post("/convert", (req, res) => __awaiter(void 0, void 0, void 0, function* (
         res.status(422).send({ error: "There was a validation error" });
     }
     try {
-        const data = yield axios_1.default.get(`https://api.apilayer.com/fixer/convert?to=${toCurrency}&from=${fromCurrency}&amount=${amount}&apikey=${process.env.APIKEY}`);
-        console.log(data.data);
-        const result = data.data.result;
+        //const result = await convert(fromCurrency, toCurrency, amount);
+        const result = 21;
+        yield (0, stats_1.updateStats)(fromCurrency, toCurrency, amount);
+        const stats = yield (0, stats_1.readStats)();
+        //console.log(stats);
         res.status(200).send({
             message: "Result fetched successfuly",
             data: {
-                amount: amount,
-                from: fromCurrency,
-                to: toCurrency,
-                result: result,
+                result: {
+                    amount: amount,
+                    from: fromCurrency,
+                    to: toCurrency,
+                    result: result,
+                },
+                stats: {
+                    mostPopularDestinationCurrency: stats.mostPopularDestinationCurrency,
+                    totalAmount: stats.totalAmount,
+                    totalNumberOfRequests: stats.totalNumberOfRequests,
+                },
             },
         });
     }
