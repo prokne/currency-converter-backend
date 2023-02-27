@@ -3,23 +3,30 @@ import { StatsData } from "../types/types";
 import convert from "./convert";
 
 export async function readStats(): Promise<
-  { mostPopularDestinationCurrency: string } & StatsData
+  { mostPopularDestinationCurrencies: string[] } & StatsData
 > {
   const data = await fs.readFile("stats.json", "utf-8");
   const stats: StatsData = JSON.parse(data);
 
-  let mostPopularDestinationCurrency = "";
+  let mostPopularDestinationCurrencies: string[] = [];
   let numOfRequests = 0;
 
-  stats.destinationCurrencies.forEach((currency) => {
-    if (currency.numOfRequests > numOfRequests) {
-      mostPopularDestinationCurrency = currency.shortcut;
-      numOfRequests = currency.numOfRequests;
+  //Sort destination currencies array in descending order by number of requests
+  const sortedMostPopDestCurrencies = stats.destinationCurrencies.sort(
+    (a, b) => b.numOfRequests - a.numOfRequests
+  );
+
+  //Keep only destination currency, which has the biggest number of requests (or multiple
+  //destination currencies, if there are such with the same biggest number) and store it in a new array
+  numOfRequests = sortedMostPopDestCurrencies[0].numOfRequests;
+  sortedMostPopDestCurrencies.forEach((currency) => {
+    if (currency.numOfRequests === numOfRequests) {
+      mostPopularDestinationCurrencies.push(currency.shortcut);
     }
   });
 
   return {
-    mostPopularDestinationCurrency,
+    mostPopularDestinationCurrencies,
     destinationCurrencies: stats.destinationCurrencies,
     totalAmount: stats.totalAmount,
     totalNumberOfRequests: stats.totalNumberOfRequests,
@@ -30,7 +37,7 @@ export async function readStats(): Promise<
 export async function updateStats(
   fromCurrency: string,
   destinationCurrency: string,
-  amount: string
+  amount: number
 ) {
   const { totalAmount, totalNumberOfRequests, destinationCurrencies } =
     await readStats();
