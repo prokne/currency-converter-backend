@@ -14,9 +14,11 @@ router.post("/", async (req: Request, res: Response) => {
   //Server-side form validation
   if (isNaN(amount)) {
     res.status(422).send({ error: "There was a validation error" });
+    return;
   }
   if (+amount <= 0 || fromCurrency === toCurrency) {
     res.status(422).send({ error: "There was a validation error" });
+    return;
   }
 
   try {

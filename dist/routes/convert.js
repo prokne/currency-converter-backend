@@ -25,9 +25,11 @@ exports.router.post("/", (req, res) => __awaiter(void 0, void 0, void 0, functio
     //Server-side form validation
     if (isNaN(amount)) {
         res.status(422).send({ error: "There was a validation error" });
+        return;
     }
     if (+amount <= 0 || fromCurrency === toCurrency) {
         res.status(422).send({ error: "There was a validation error" });
+        return;
     }
     try {
         const result = yield (0, convert_1.default)(fromCurrency, toCurrency, amount);
