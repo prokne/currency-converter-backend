@@ -1,8 +1,6 @@
 import express from "express";
-import axios from "axios";
 import dotenv from "dotenv";
 import bodyParser from "body-parser";
-//import convert from "./util/convert";
 import { router as currenciesRouter } from "./routes/currencies";
 import { router as convertRouter } from "./routes/convert";
 

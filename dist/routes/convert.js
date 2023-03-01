@@ -14,22 +14,28 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.router = void 0;
 const express_1 = __importDefault(require("express"));
+const convert_1 = __importDefault(require("../util/convert"));
 const stats_1 = require("../util/stats");
 exports.router = express_1.default.Router();
+//Handles /convert post request
 exports.router.post("/", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const amount = req.body.amount;
     const fromCurrency = req.body.from;
     const toCurrency = req.body.to;
     //Server-side form validation
+    if (isNaN(amount)) {
+        res.status(422).send({ error: "There was a validation error" });
+    }
     if (+amount <= 0 || fromCurrency === toCurrency) {
         res.status(422).send({ error: "There was a validation error" });
     }
     try {
-        //const result = await convert(fromCurrency, toCurrency, amount);
-        const result = 21;
+        const result = yield (0, convert_1.default)(fromCurrency, toCurrency, amount);
+        //Update stats with recieved values
         yield (0, stats_1.updateStats)(fromCurrency, toCurrency, amount);
+        //Get updated stats object
         const stats = yield (0, stats_1.readStats)();
-        //console.log(stats);
+        //sends result of conversion and updatet statistics to frontend
         res.status(200).send({
             message: "Result fetched successfuly",
             data: {
@@ -46,6 +52,7 @@ exports.router.post("/", (req, res) => __awaiter(void 0, void 0, void 0, functio
                 },
             },
         });
+        //Error handling
     }
     catch (error) {
         console.log(error);

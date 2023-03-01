@@ -2,28 +2,40 @@ import fs from "fs/promises";
 import { StatsData } from "../types/types";
 import convert from "./convert";
 
+//Returns object of statistics saved in json object
 export async function readStats(): Promise<
   { mostPopularDestinationCurrencies: string[] } & StatsData
 > {
+  //Read statistics from json object
   const data = await fs.readFile("stats.json", "utf-8");
   const stats: StatsData = JSON.parse(data);
 
+  //Helper variables for building most popular destination currencies array
   let mostPopularDestinationCurrencies: string[] = [];
   let numOfRequests = 0;
 
-  //Sort destination currencies array in descending order by number of requests
-  const sortedMostPopDestCurrencies = stats.destinationCurrencies.sort(
-    (a, b) => b.numOfRequests - a.numOfRequests
-  );
+  //If there is at least 1 currency in destinationCurrencies recieved from json object
+  //Sort destination currencies array recieved from json object in descending order by number of requests
+  if (stats.destinationCurrencies.length > 0) {
+    const sortedMostPopDestCurrencies = stats.destinationCurrencies.sort(
+      (a, b) => b.numOfRequests - a.numOfRequests
+    );
 
-  //Keep only destination currency, which has the biggest number of requests (or multiple
-  //destination currencies, if there are such with the same biggest number) and store it in a new array
-  numOfRequests = sortedMostPopDestCurrencies[0].numOfRequests;
-  sortedMostPopDestCurrencies.forEach((currency) => {
-    if (currency.numOfRequests === numOfRequests) {
-      mostPopularDestinationCurrencies.push(currency.shortcut);
-    }
-  });
+    //From the sorted array keep only the destination currency, which has the biggest number of requests (The
+    //destination currency with the biggest number of request is under index 0 in the sorted array) and push it into the new array
+    //of most popular destination currencies. If there are multiple destination currencies which has the biggest number
+    //of requests, push all of them into the new array.
+    numOfRequests = sortedMostPopDestCurrencies[0].numOfRequests;
+    sortedMostPopDestCurrencies.forEach((currency) => {
+      if (currency.numOfRequests === numOfRequests) {
+        mostPopularDestinationCurrencies.push(currency.shortcut);
+      }
+    });
+
+    //If the destinationCurrencies array is empty, mostPopularDestinationCurrencies contains array with dash
+  } else {
+    mostPopularDestinationCurrencies = [" - "];
+  }
 
   return {
     mostPopularDestinationCurrencies,
@@ -43,11 +55,10 @@ export async function updateStats(
     await readStats();
 
   //Convert requested amount to USD
-  // const amounttoUSD = await convert(fromCurrency, "USD", amount);
-  const amounttoUSD = 25;
+  const amounttoUSD = await convert(fromCurrency, "USD", amount);
 
-  //If destination currencies array already has requested destination currency, update number of requests,
-  //otherwise add this destination currency to the destination currencies array
+  //If destination currencies array already has requested destination currency, increase number of requests by 1,
+  //otherwise add this destination currency into the destination currencies array
   const existingDestCurrency = destinationCurrencies.find(
     (currency) => currency.shortcut === destinationCurrency
   );
@@ -63,16 +74,16 @@ export async function updateStats(
     });
   }
 
-  //Increase total num of requests by 1 and add requested amount in USD to total converted amount stat.
+  //Increase total num of requests by 1 and add requested amount in USD to total converted amount stat
   const updatedNumOfReq = totalNumberOfRequests + 1;
   const updatedTotalAmount = totalAmount + amounttoUSD;
 
+  //Write updated statistics into json object
   const data = JSON.stringify({
     destinationCurrencies: destinationCurrencies,
     totalAmount: updatedTotalAmount,
     totalNumberOfRequests: updatedNumOfReq,
   });
-  console.log(data);
 
   await fs.writeFile("stats.json", data);
 }

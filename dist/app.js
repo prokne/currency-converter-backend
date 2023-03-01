@@ -6,7 +6,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const body_parser_1 = __importDefault(require("body-parser"));
-//import convert from "./util/convert";
 const currencies_1 = require("./routes/currencies");
 const convert_1 = require("./routes/convert");
 const app = (0, express_1.default)();

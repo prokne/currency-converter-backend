@@ -4,7 +4,7 @@ import axios from "axios";
 async function convert(
   fromCurrency: string,
   destinationCurrency: string,
-  amount: string
+  amount: number
 ): Promise<number> {
   const data = await axios.get(
     `https://api.apilayer.com/currency_data/convert?to=${destinationCurrency}&from=${fromCurrency}&amount=${amount}&apikey=${process.env.APIKEY}`
